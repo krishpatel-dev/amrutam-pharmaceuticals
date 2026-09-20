@@ -1,75 +1,107 @@
-"""Pytest configuration and shared fixtures.
+"""Pytest configuration and shared fixtures for test isolation and DB management.
 
-Uses the industry-standard transactional isolation pattern:
-- Session-scoped engine creates all tables once.
-- Each test runs inside a transaction that rolls back — no data leaks between tests.
-- FastAPI's get_db dependency is overridden to inject the test session.
+Architecture:
+- Test engine uses NullPool to ensure connections are opened on demand and closed
+  immediately, eliminating cross-event-loop and concurrency issues in asyncpg.
+- Tables are created once at the start of the test session and dropped at the end.
+- Between each test, an autouse fixture truncates all tables (with CASCADE) to ensure
+  strict data isolation and a clean slate.
+- FastAPI's get_db dependency is overridden with a per-request session factory,
+  ensuring each HTTP request gets its own AsyncSession that commits on success
+  and closes cleanly, matching production behavior and preventing asyncpg concurrency conflicts.
 """
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncGenerator
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
+import app.models  # noqa: F401 - ensures all ORM models are registered on Base.metadata
 from app.core.config import settings
 from app.db.base import Base, get_db
 from app.main import app
 
 TEST_DATABASE_URL = settings.DATABASE_URL.replace("/amrutam_db", "/amrutam_test")
 
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    poolclass=NullPool,
+    echo=False,
+)
 
-@pytest.fixture(scope="session")
-def event_loop():
-    """Single event loop shared across the whole test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+TestSessionLocal = async_sessionmaker(
+    bind=test_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
 
 
 @pytest_asyncio.fixture(scope="session")
 async def db_engine():
-    """Create engine + all tables once per session, drop after all tests."""
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-    async with engine.begin() as conn:
+    """Create all tables once per test session, drop after session."""
+    async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    async with engine.begin() as conn:
+    yield test_engine
+    async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    await engine.dispose()
+    await test_engine.dispose()
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def clean_database(db_engine):
+    """Clean all tables before and after each test to guarantee strict isolation."""
+    if db_engine is not None:
+        async with test_engine.begin() as conn:
+            table_names = ", ".join(
+                f'"{table.name}"' for table in Base.metadata.sorted_tables
+            )
+            if table_names:
+                await conn.execute(
+                    text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE;")
+                )
+    yield
+    if db_engine is not None:
+        async with test_engine.begin() as conn:
+            table_names = ", ".join(
+                f'"{table.name}"' for table in Base.metadata.sorted_tables
+            )
+            if table_names:
+                await conn.execute(
+                    text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE;")
+                )
 
 
 @pytest_asyncio.fixture
 async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
-    """Each test gets its own connection wrapped in a transaction that rolls back.
-
-    This means every test starts with a clean slate — no leftover rows.
-    """
-    connection = await db_engine.connect()
-    transaction = await connection.begin()
-
-    session_factory = async_sessionmaker(
-        bind=connection, class_=AsyncSession, expire_on_commit=False
-    )
-    session = session_factory()
-
-    yield session
-
-    await session.close()
-    await transaction.rollback()
-    await connection.close()
+    """Provide a dedicated async DB session for tests that directly need one."""
+    if db_engine is None:
+        yield None  # type: ignore[misc]
+        return
+    async with TestSessionLocal() as session:
+        yield session
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """HTTPX async test client with the DB session injected into FastAPI."""
+async def client(db_engine) -> AsyncGenerator[AsyncClient, None]:
+    """HTTPX async test client with isolated per-request DB sessions."""
 
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-        yield db_session
+        async with TestSessionLocal() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
 
     app.dependency_overrides[get_db] = override_get_db
 
