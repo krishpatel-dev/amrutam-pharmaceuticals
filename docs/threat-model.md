@@ -12,17 +12,17 @@ Comprehensive threat modeling analysis based on the **STRIDE** methodology (Spoo
                       ▼
 ┌────────────────────────────────────────────────────────┐
 │ DMZ / Boundary: Ingress & Rate Limiter                 │
-│  - slowapi (Per-IP / Per-User Token Bucket)           │
-│  - SecurityHeadersMiddleware (HSTS, CSP, X-Frame)     │
+│  - slowapi (Per-IP / Per-User Token Bucket)            │
+│  - SecurityHeadersMiddleware (HSTS, CSP, X-Frame)      │
 │  - RequestIDMiddleware (Traceability)                  │
 └────────────────────────────────────────────────────────┘
                       │
                       ▼
 ┌────────────────────────────────────────────────────────┐
-│ Application Zone: FastAPI Core Services               │
+│ Application Zone: FastAPI Core Services                │
 │  - JWT Bearer Authentication + TOTP MFA Verification   │
 │  - RBAC Engine (Patient, Doctor, Admin)                │
-│  - Pydantic v2 Input Sanitization & Validation        │
+│  - Pydantic v2 Input Sanitization & Validation         │
 │  - Idempotency Gatekeeper (X-Idempotency-Key)          │
 │  - Audit Logging Middleware                            │
 └────────────────────────────────────────────────────────┘
