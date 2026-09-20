@@ -98,11 +98,10 @@ def create_app() -> FastAPI:
     async def health() -> dict:
         return {"status": "ok", "version": settings.APP_VERSION}
 
-    @app.get("/ready", tags=["Health"], include_in_schema=False)
-    async def ready() -> dict | JSONResponse:  # type: ignore[return]
+    @app.get("/ready", tags=["Health"], include_in_schema=False, response_model=None)
+    async def ready():  # type: ignore[return]
         """Readiness probe — check DB connectivity."""
         from fastapi import status as http_status
-        from fastapi.responses import JSONResponse
 
         try:
             async with engine.connect() as conn:
