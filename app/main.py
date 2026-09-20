@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
-        description="Telemedicine backend API for Amrutam — "
+        description="Backend API for Amrutam Pharmaceuticals — "
         "doctor search, consultation booking, prescriptions, and payments.",
         docs_url="/docs" if not settings.is_production else None,
         redoc_url="/redoc" if not settings.is_production else None,

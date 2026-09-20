@@ -11,7 +11,7 @@ dev-mode-dirs = ["."]
 [project]
 name = "amrutam-pharmaceuticals"
 version = "1.0.0"
-description = "Production-grade telemedicine backend for Amrutam"
+description = "Production-grade backend for Amrutam Pharmaceuticals"
 requires-python = ">=3.11"
 
 dependencies = [

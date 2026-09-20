@@ -1,4 +1,4 @@
-# Threat Model — Amrutam Telemedicine Platform
+# Threat Model — Amrutam Pharmaceuticals Platform
 
 Comprehensive threat modeling analysis based on the **STRIDE** methodology (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege), covering data classification, trust boundaries, attack surface, and security controls.
 

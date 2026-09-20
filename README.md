@@ -1,6 +1,6 @@
 # Amrutam Pharmaceuticals Backend
 
-Backend API for Amrutam's telemedicine platform. Built with FastAPI + PostgreSQL, designed to handle high-volume consultation booking.
+Backend API for Amrutam Pharmaceuticals platform. Built with FastAPI + PostgreSQL, designed to handle high-volume consultation booking.
 
 ## Tech Stack
 

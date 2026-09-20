@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Amrutam Pharmaceuticals API",
-    "description": "Telemedicine backend API for Amrutam \u2014 doctor search, consultation booking, prescriptions, and payments.",
+    "description": "Backend API for Amrutam Pharmaceuticals \u2014 doctor search, consultation booking, prescriptions, and payments.",
     "version": "1.0.0"
   },
   "paths": {
