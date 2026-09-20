@@ -157,4 +157,7 @@ amrutam-pharmaceuticals/
 
 - [Architecture notes](docs/architecture.md)
 - [Security notes](docs/security-checklist.md)
+- [Threat model (STRIDE)](docs/threat-model.md)
 - [ER diagram](docs/er-diagram.md)
+- [OpenAPI 3.1 Schema](docs/openapi.json)
+
