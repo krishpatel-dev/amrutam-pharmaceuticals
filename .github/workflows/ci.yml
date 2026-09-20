@@ -97,39 +97,11 @@ jobs:
           pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Create database tables
-        env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/amrutam_test
-          APP_SECRET_KEY: test-secret-key-that-is-long-enough-for-validation
-          JWT_SECRET_KEY: test-jwt-secret-key-that-is-long-enough
+      - name: Run unit tests (no database needed)
         run: |
-          python -c "
-          import asyncio
-          from app.db.base import Base, engine
-          async def create():
-              async with engine.begin() as conn:
-                  await conn.run_sync(Base.metadata.create_all)
-              await engine.dispose()
-          asyncio.run(create())
-          print('Tables created.')
-          "
+          pytest tests/unit/ -v
 
-      - name: Run unit tests
-        env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/amrutam_test
-          REDIS_URL: redis://localhost:6379/0
-          APP_SECRET_KEY: test-secret-key-that-is-long-enough-for-validation
-          JWT_SECRET_KEY: test-jwt-secret-key-that-is-long-enough
-          APP_ENV: development
-          ENABLE_METRICS: "false"
-        run: |
-          pytest tests/unit/ tests/integration/test_api.py \
-            --cov=app \
-            --cov-report=term-missing \
-            --cov-report=xml \
-            -v
-
-      - name: Run integration tests
+      - name: Run integration tests (database + tables via fixture)
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/amrutam_test
           REDIS_URL: redis://localhost:6379/0
@@ -140,7 +112,6 @@ jobs:
         run: |
           pytest tests/integration/ \
             --cov=app \
-            --cov-append \
             --cov-report=term-missing \
             --cov-report=xml \
             -v
