@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from httpx import AsyncClient
+
+from app.core.security import create_access_token, hash_password
+from app.models.user import User
+from tests.conftest import TestSessionLocal
 
 
 async def _register_and_login(client: AsyncClient, email: str, role: str) -> str:
@@ -29,7 +34,7 @@ async def _register_and_login(client: AsyncClient, email: str, role: str) -> str
 async def _create_doctor_and_slot(client: AsyncClient, doctor_token: str) -> dict:
     """Helper: create doctor profile, verify, and create a slot."""
     # Create doctor profile
-    await client.post(
+    doc_resp = await client.post(
         "/api/v1/doctors/me",
         headers={"Authorization": f"Bearer {doctor_token}"},
         json={
@@ -38,6 +43,26 @@ async def _create_doctor_and_slot(client: AsyncClient, doctor_token: str) -> dic
             "consultation_fee": "500.00",
             "years_experience": 5,
         },
+    )
+    doctor_id = doc_resp.json()["data"]["id"]
+
+    # Create admin and verify doctor
+    async with TestSessionLocal() as session:
+        admin = User(
+            email=f"admin_{uuid.uuid4().hex[:8]}@test.com",
+            hashed_password=hash_password("AdminPass1!"),
+            role="admin",
+            is_active=True,
+        )
+        session.add(admin)
+        await session.commit()
+        admin_id = str(admin.id)
+
+    admin_token = create_access_token(admin_id, "admin")
+    await client.put(
+        f"/api/v1/doctors/{doctor_id}/verify",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        json={"is_verified": True},
     )
 
     # Create a future slot

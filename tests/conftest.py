@@ -13,6 +13,7 @@ Architecture:
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 
 import pytest_asyncio
@@ -26,7 +27,9 @@ from app.core.config import settings
 from app.db.base import Base, get_db
 from app.main import app
 
-TEST_DATABASE_URL = settings.DATABASE_URL.replace("/amrutam_db", "/amrutam_test")
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL.replace(
+    "/amrutam_db", "/amrutam_test"
+)
 
 test_engine = create_async_engine(
     TEST_DATABASE_URL,

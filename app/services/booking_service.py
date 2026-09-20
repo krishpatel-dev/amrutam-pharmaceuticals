@@ -7,6 +7,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import set_committed_value
 
 from app.core.exceptions import (
     DoctorNotVerifiedError,
@@ -68,7 +69,12 @@ class BookingService:
             raise SlotUnavailableError()
 
         now = datetime.now(UTC)
-        if slot.start_time < now:
+        slot_start = (
+            slot.start_time
+            if slot.start_time.tzinfo
+            else slot.start_time.replace(tzinfo=UTC)
+        )
+        if slot_start < now:
             raise SlotInPastError()
 
         doctor = await self._doctor_repo.get_by_id(slot.doctor_id)
@@ -86,6 +92,7 @@ class BookingService:
             scheduled_at=slot.start_time,
             idempotency_key=key,
         )
+        set_committed_value(consultation, "notes", [])
 
         await self._audit_repo.log(
             action="consultation_booked",
@@ -104,7 +111,10 @@ class BookingService:
         return ConsultationOut.model_validate(consultation)
 
     async def start_consultation(
-        self, consultation_id: UUID, doctor_id: UUID
+        self,
+        consultation_id: UUID,
+        doctor_id: UUID,
+        doctor_user_id: UUID | None = None,
     ) -> ConsultationOut:
         """Mark a consultation as in-progress (doctor only)."""
         consultation = await self._consult_repo.get_with_details(consultation_id)
@@ -124,16 +134,25 @@ class BookingService:
             status=ConsultationStatus.IN_PROGRESS,
             started_at=datetime.now(UTC),
         )
+
+        auth_user_id = doctor_user_id
+        if auth_user_id is None:
+            doc = await self._doctor_repo.get_by_id(doctor_id)
+            auth_user_id = doc.user_id if doc else None
+
         await self._audit_repo.log(
             action="consultation_started",
-            user_id=doctor_id,
+            user_id=auth_user_id,
             resource_type="consultation",
             resource_id=str(consultation_id),
         )
         return ConsultationOut.model_validate(updated)
 
     async def end_consultation(
-        self, consultation_id: UUID, doctor_id: UUID
+        self,
+        consultation_id: UUID,
+        doctor_id: UUID,
+        doctor_user_id: UUID | None = None,
     ) -> ConsultationOut:
         """Mark a consultation as completed (doctor only)."""
         consultation = await self._consult_repo.get_with_details(consultation_id)
@@ -151,9 +170,15 @@ class BookingService:
             status=ConsultationStatus.COMPLETED,
             ended_at=datetime.now(UTC),
         )
+
+        auth_user_id = doctor_user_id
+        if auth_user_id is None:
+            doc = await self._doctor_repo.get_by_id(doctor_id)
+            auth_user_id = doc.user_id if doc else None
+
         await self._audit_repo.log(
             action="consultation_completed",
-            user_id=doctor_id,
+            user_id=auth_user_id,
             resource_type="consultation",
             resource_id=str(consultation_id),
         )

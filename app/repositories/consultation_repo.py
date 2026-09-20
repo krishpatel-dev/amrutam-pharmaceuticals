@@ -16,7 +16,9 @@ class ConsultationRepository(BaseRepository[Consultation]):
 
     async def get_by_idempotency_key(self, key: str) -> Consultation | None:
         result = await self.db.execute(
-            select(Consultation).where(Consultation.idempotency_key == key)
+            select(Consultation)
+            .where(Consultation.idempotency_key == key)
+            .options(selectinload(Consultation.notes))
         )
         return result.scalar_one_or_none()
 
@@ -39,7 +41,10 @@ class ConsultationRepository(BaseRepository[Consultation]):
         result = await self.db.execute(
             select(Consultation)
             .where(Consultation.patient_id == patient_id)
-            .options(selectinload(Consultation.slot))
+            .options(
+                selectinload(Consultation.slot),
+                selectinload(Consultation.notes),
+            )
             .order_by(Consultation.created_at.desc())
             .offset(offset)
             .limit(limit)
@@ -52,7 +57,10 @@ class ConsultationRepository(BaseRepository[Consultation]):
         stmt = (
             select(Consultation)
             .where(Consultation.doctor_id == doctor_id)
-            .options(selectinload(Consultation.slot))
+            .options(
+                selectinload(Consultation.slot),
+                selectinload(Consultation.notes),
+            )
             .order_by(Consultation.created_at.desc())
             .offset(offset)
             .limit(limit)

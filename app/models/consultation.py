@@ -111,7 +111,10 @@ class Consultation(Base):
         "AvailabilitySlot", back_populates="consultation"
     )
     notes: Mapped[list[ConsultationNote]] = relationship(
-        "ConsultationNote", back_populates="consultation", cascade="all, delete-orphan"
+        "ConsultationNote",
+        back_populates="consultation",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     prescription: Mapped[Prescription | None] = relationship(  # noqa: F821
         "Prescription", back_populates="consultation", uselist=False

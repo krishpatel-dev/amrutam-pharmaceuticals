@@ -57,15 +57,13 @@ class BaseRepository(Generic[ModelT]):
     async def create(self, **kwargs: Any) -> ModelT:
         obj = self.model(**kwargs)
         self.db.add(obj)
-        await self.db.flush()  # Get PK without committing
-        await self.db.refresh(obj)
+        await self.db.flush()  # Get PK and server defaults via RETURNING
         return obj
 
     async def update(self, obj: ModelT, **kwargs: Any) -> ModelT:
         for key, value in kwargs.items():
             setattr(obj, key, value)
         await self.db.flush()
-        await self.db.refresh(obj)
         return obj
 
     async def delete(self, obj: ModelT) -> None:
@@ -75,5 +73,4 @@ class BaseRepository(Generic[ModelT]):
     async def save(self, obj: ModelT) -> ModelT:
         self.db.add(obj)
         await self.db.flush()
-        await self.db.refresh(obj)
         return obj

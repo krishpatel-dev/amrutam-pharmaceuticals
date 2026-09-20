@@ -143,7 +143,9 @@ async def start_consultation(
         raise NotFoundError("Doctor profile not found.")
 
     service = BookingService(db)
-    result = await service.start_consultation(consultation_id, doctor.id)
+    result = await service.start_consultation(
+        consultation_id, doctor.id, doctor_user_id=uuid.UUID(user_id)
+    )
     return SuccessResponse(message="Consultation started.", data=result.model_dump(mode="json"))
 
 
@@ -164,7 +166,9 @@ async def end_consultation(
         raise NotFoundError("Doctor profile not found.")
 
     service = BookingService(db)
-    result = await service.end_consultation(consultation_id, doctor.id)
+    result = await service.end_consultation(
+        consultation_id, doctor.id, doctor_user_id=uuid.UUID(user_id)
+    )
     return SuccessResponse(message="Consultation completed.", data=result.model_dump(mode="json"))
 
 

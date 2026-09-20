@@ -57,7 +57,7 @@ class UserRepository(BaseRepository[User]):
         )
         self.db.add(profile)
         await self.db.flush()
-        await self.db.refresh(user)
+        user.profile = profile
         return user
 
 

@@ -55,7 +55,10 @@ class Prescription(Base):
         "Consultation", back_populates="prescription"
     )
     medications: Mapped[list[Medication]] = relationship(
-        "Medication", back_populates="prescription", cascade="all, delete-orphan"
+        "Medication",
+        back_populates="prescription",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     def __repr__(self) -> str:

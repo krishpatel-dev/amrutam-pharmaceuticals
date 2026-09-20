@@ -60,9 +60,9 @@ class PrescriptionService:
         )
         self._db.add(prescription)
         await self._db.flush()
-        await self._db.refresh(prescription)
 
         # Add medications
+        meds: list[Medication] = []
         for med_data in data.medications:
             med = Medication(
                 prescription_id=prescription.id,
@@ -74,9 +74,10 @@ class PrescriptionService:
                 notes=med_data.notes,
             )
             self._db.add(med)
+            meds.append(med)
 
         await self._db.flush()
-        await self._db.refresh(prescription)
+        prescription.medications = meds
 
         await self._audit_repo.log(
             action="prescription_issued",

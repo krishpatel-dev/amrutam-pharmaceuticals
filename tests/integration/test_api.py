@@ -37,9 +37,11 @@ class TestAuthEndpoints:
         assert response.status_code == 422
 
     async def test_login_wrong_credentials_returns_401(self, client: AsyncClient):
-        # This test hits the DB — will be skipped cleanly if no PostgreSQL is running
-        import pytest
-        pytest.skip("Requires live PostgreSQL — run with Docker")
+        response = await client.post(
+            "/api/v1/auth/login",
+            json={"email": "nobody@example.com", "password": "WrongPassword1!"},
+        )
+        assert response.status_code == 401
 
     async def test_protected_endpoint_without_token_returns_401(
         self, client: AsyncClient

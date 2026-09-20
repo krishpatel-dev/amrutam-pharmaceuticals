@@ -65,7 +65,10 @@ class Doctor(Base):
     )
 
     user: Mapped[User] = relationship(  # noqa: F821
-        "User", back_populates="doctor_profile", foreign_keys=[user_id]
+        "User",
+        back_populates="doctor_profile",
+        foreign_keys=[user_id],
+        lazy="selectin",
     )
     availability_slots: Mapped[list[AvailabilitySlot]] = relationship(  # noqa: F821
         "AvailabilitySlot", back_populates="doctor", cascade="all, delete-orphan"

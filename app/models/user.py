@@ -57,7 +57,11 @@ class User(Base):
     )
 
     profile: Mapped[UserProfile | None] = relationship(
-        "UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
+        "UserProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     doctor_profile: Mapped[Doctor | None] = relationship(  # noqa: F821
         "Doctor",
