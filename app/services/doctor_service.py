@@ -55,7 +55,7 @@ class DoctorService:
         )
 
         # Reload with user profile
-        doctor = await self._doctor_repo.get_with_user(doctor.id)
+        doctor = await self._doctor_repo.get_with_user(doctor.id)  # type: ignore[assignment]
         return self._to_out(doctor)
 
     async def get_doctor(self, doctor_id: UUID) -> DoctorOut:

@@ -59,7 +59,7 @@ def create_access_token(user_id: str, role: str) -> str:
     """Create a short-lived access JWT."""
     return _create_token(
         subject=user_id,
-        token_type="access",
+        token_type="access",  # nosec B106
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         extra_claims={"role": role},
     )
@@ -69,7 +69,7 @@ def create_refresh_token(user_id: str) -> str:
     """Create a long-lived refresh JWT."""
     return _create_token(
         subject=user_id,
-        token_type="refresh",
+        token_type="refresh",  # nosec B106
         expires_delta=timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
 

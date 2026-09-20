@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.audit import AuditLog
+    from app.models.consultation import Consultation
+    from app.models.doctor import Doctor
 
 
 class UserRole(str):

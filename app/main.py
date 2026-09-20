@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -81,9 +82,9 @@ def create_app() -> FastAPI:
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestIDMiddleware)
 
-    app.add_exception_handler(AppError, app_error_handler)
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-    app.add_exception_handler(Exception, unhandled_error_handler)
+    app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    app.add_exception_handler(Exception, unhandled_error_handler)  # type: ignore[arg-type]
 
     if settings.ENABLE_METRICS:
         Instrumentator(
@@ -98,16 +99,16 @@ def create_app() -> FastAPI:
         return {"status": "ok", "version": settings.APP_VERSION}
 
     @app.get("/ready", tags=["Health"], include_in_schema=False)
-    async def ready() -> dict:
+    async def ready() -> dict | JSONResponse:  # type: ignore[return]
         """Readiness probe — check DB connectivity."""
+        from fastapi import status as http_status
+        from fastapi.responses import JSONResponse
+
         try:
             async with engine.connect() as conn:
                 await conn.execute(__import__("sqlalchemy").text("SELECT 1"))
             return {"status": "ready", "database": "connected"}
         except Exception as exc:
-            from fastapi import status as http_status
-            from fastapi.responses import JSONResponse
-
             return JSONResponse(
                 status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
                 content={"status": "not_ready", "database": str(exc)},

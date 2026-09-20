@@ -101,7 +101,7 @@ class DoctorRepository(BaseRepository[Doctor]):
             "experience": Doctor.years_experience.desc(),
             "consultations": Doctor.total_consultations.desc(),
         }
-        stmt = stmt.order_by(sort_map.get(params.sort_by, Doctor.rating.desc()))
+        stmt = stmt.order_by(sort_map.get(params.sort_by, Doctor.rating.desc()))  # type: ignore[arg-type]
 
         # Count
         count_stmt = select(func.count()).select_from(stmt.subquery())
