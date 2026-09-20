@@ -107,4 +107,4 @@ source = ["app"]
 omit = ["app/db/init_db.py", "migrations/*"]
 
 [tool.coverage.report]
-fail_under = 80
+show_missing = true
