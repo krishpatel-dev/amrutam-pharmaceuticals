@@ -98,6 +98,12 @@ jobs:
           pip install ".[dev]"
 
       - name: Run unit tests (no database needed)
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/amrutam_test
+          APP_SECRET_KEY: test-secret-key-that-is-long-enough-for-validation
+          JWT_SECRET_KEY: test-jwt-secret-key-that-is-long-enough
+          APP_ENV: development
+          ENABLE_METRICS: "false"
         run: |
           pytest tests/unit/ -v
 
